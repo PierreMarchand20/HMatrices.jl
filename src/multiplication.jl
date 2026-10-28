@@ -563,10 +563,10 @@ function LinearAlgebra.mul!(
 )
 
     @assert typeof(R)<:RkMatrix "R must be a RkMatrix"
-    k=findfirst(x->x<=eps, R.rel_er)
-    if isnothing(k) #tolerance too low for the residues in the rkmatrix, we'll use all columns
-        k = size(R.A,2)
-    end
+    # rel_er (ACA increment estimates) is not monotone: keep every term up to the
+    # last one above eps, so that one small increment does not truncate too early
+    k = findlast(x->x>eps, R.rel_er)
+    k = min(isnothing(k) ? 1 : k + 1, size(R.A,2))
     tmp = adjoint(view(R.B,:,1:k)) * x
     # tmp = mul!(R.buffer, adjoint(R.B), x)
     return mul!(y, view(R.A,:,1:k), tmp, a, b)
